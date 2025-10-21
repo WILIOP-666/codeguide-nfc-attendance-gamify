@@ -1,117 +1,108 @@
-# Project Requirements Document: codeguide-starter
-
----
+# Project Requirements Document
 
 ## 1. Project Overview
 
-The **codeguide-starter** project is a boilerplate web application that provides a ready-made foundation for any web project requiring secure user authentication and a post-login dashboard. It sets up the common building blocks—sign-up and sign-in pages, API routes to handle registration and login, and a simple dashboard interface driven by static data. By delivering this skeleton, it accelerates development time and ensures best practices are in place from day one.
+This project is a mobile application built with Flutter and Supabase that digitizes student attendance using NFC cards and motivates participation through gamification. Students tap their MIFARE Classic cards on an admin’s device to check in for class; the system records attendance, automatically awards points, and updates leaderboards in real time. Teachers and administrators gain a smooth way to track attendance, while school owners can view high-level analytics on engagement.
 
-This starter kit is being built to solve the friction developers face when setting up repeated common tasks: credential handling, session management, page routing, and theming. Key objectives include: 1) delivering a fully working authentication flow (registration & login), 2) providing a gated dashboard area upon successful login, 3) establishing a clear, maintainable project structure using Next.js and TypeScript, and 4) demonstrating a clean theming approach with global and section-specific CSS. Success is measured by having an end-to-end login journey in under 200 lines of code and zero runtime type errors.
+We’re building this to replace manual attendance logs, increase student engagement, and provide actionable insights to school staff. Success means delivering a reliable NFC check-in flow, a robust backend engine that handles points, streaks, and redemptions, plus easy-to-use dashboards for three roles: Student, Admin, and Owner. Key objectives include 99% uptime for check-ins, sub-second real-time updates, and secure, role-based data access.
 
 ---
 
 ## 2. In-Scope vs. Out-of-Scope
 
 ### In-Scope (Version 1)
-- User registration (sign-up) form with validation
-- User login (sign-in) form with validation
-- Next.js API routes under `/api/auth/route.ts` handling:
-  - Credential validation
-  - Password hashing (e.g., bcrypt)
-  - Session creation or JWT issuance
-- Protected dashboard pages under `/dashboard`:
-  - `layout.tsx` wrapping dashboard content
-  - `page.tsx` rendering static data from `data.json`
-- Global application layout in `/app/layout.tsx`
-- Basic styling via `globals.css` and `dashboard/theme.css`
-- TypeScript strict mode enabled
+- User authentication with Supabase Auth (email/password) and role assignments (Student, Admin, Owner)
+- Role-based routing and Row Level Security (RLS) policies
+- Admin-facing NFC check-in screen (using `flutter_nfc_kit`) that records attendance and awards points via Supabase Edge Functions
+- Core gamification engine: point transactions, streak calculations, achievement unlocking
+- Student dashboard: attendance history, points balance, earned badges
+- Admin dashboard: class list management, attendance logs, merchandise order processing
+- Owner dashboard: interactive analytics charts (using `fl_chart`) and leaderboards
+- Real-time updates via Supabase Realtime subscription
+- Basic merchandise redemption flow (points deduction + order creation)
+- Reusable Flutter widget library (StatCard, LeaderboardListItem, AchievementBadge)
+- Environment variable management for Supabase credentials (`flutter_dotenv`)
+- Unit tests for Edge Functions, widget tests, integration tests for critical flows
 
-### Out-of-Scope (Later Phases)
-- Integration with a real database (PostgreSQL, MongoDB, etc.)
-- Advanced authentication flows (password reset, email verification, MFA)
-- Role-based access control (RBAC)
-- Multi-tenant or white-label theming
-- Unit, integration, or end-to-end testing suites
-- CI/CD pipeline and production deployment scripts
+### Out-of-Scope (Planned for Later Phases)
+- Offline NFC check-in support
+- Advanced merchandise inventory management and supplier integrations
+- Push notifications (FCM integration)
+- Multi-campus or multi-tenant support
+- Web or desktop clients (mobile only in v1)
+- Deep custom reporting exports (CSV/PDF)
+- Social or chat features among students
 
 ---
 
 ## 3. User Flow
 
-A new visitor lands on the root URL and sees a welcome page with options to **Sign Up** or **Sign In**. If they choose Sign Up, they fill in their email, password, and hit “Create Account.” The form submits to `/api/auth/route.ts`, which hashes the password, creates a new user session or token, and redirects them to the dashboard. If any input is invalid, an inline error message explains the issue (e.g., “Password too short”).
+A student opens the Flutter app and signs in with their email and password. Upon login, Supabase Auth checks their role claim and routes them to the Student Dashboard, where they immediately see their attendance history, total points, and any unlocked badges. They navigate through a bottom tab bar to view leaderboards, redeem points for merchandise, or update their profile.
 
-Once authenticated, the user is taken to the `/dashboard` route. Here they see a sidebar or header defined by `dashboard/layout.tsx`, and the main panel pulls in static data from `data.json`. They can log out (if that control is present), but otherwise their entire session is managed by server-side cookies or tokens. Returning users go directly to Sign In, submit credentials, and upon success they land back on `/dashboard`. Any unauthorized access to `/dashboard` redirects back to Sign In.
+An admin launches the app, signs in, and is sent to the Admin Dashboard. They tap on “Live NFC Check-In,” which activates the device’s NFC reader. When a student taps their card, the app captures the UID and calls a Supabase Edge Function `record-attendance`. That function validates the admin’s role, logs attendance, awards points, and triggers a real-time update so all connected clients (including the student’s device) refresh immediately. Owners follow a similar login flow but land on charts and data tables showing overall engagement and attendance trends.
 
 ---
 
 ## 4. Core Features
 
-- **Sign-Up Page (`/app/sign-up/page.tsx`)**: Form fields for email & password, client-side validation, POST to `/api/auth`.
-- **Sign-In Page (`/app/sign-in/page.tsx`)**: Form fields for email & password, client-side validation, POST to `/api/auth`.
-- **Authentication API (`/app/api/auth/route.ts`)**: Handles both registration and login based on HTTP method, integrates password hashing (bcrypt) and session or JWT logic.
-- **Global Layout (`/app/layout.tsx` + `globals.css`)**: Shared header, footer, and CSS resets across all pages.
-- **Dashboard Layout (`/app/dashboard/layout.tsx` + `dashboard/theme.css`)**: Sidebar or top nav for authenticated flows, section-specific styling.
-- **Dashboard Page (`/app/dashboard/page.tsx`)**: Reads `data.json`, renders it as cards or tables.
-- **Static Data Source (`/app/dashboard/data.json`)**: Example dataset to demo dynamic rendering.
-- **TypeScript Configuration**: `tsconfig.json` with strict mode and path aliases (if any).
+- **Authentication & Role Management**: Sign-up/sign-in with Supabase Auth, custom claims for Student/Admin/Owner, enforced via RLS.
+- **NFC Attendance Check-In**: Admin screen powered by `flutter_nfc_kit`, captures card UID and calls Edge Function.
+- **Supabase Edge Functions**: TypeScript functions for `record-attendance`, `calculate-leaderboard`, `process-redemption`, handling atomic point and attendance logic.
+- **Real-Time Updates**: Subscriptions to attendance and points tables; UI updates without manual refresh.
+- **Student Dashboard**: Attendance log, points balance, badges, and leaderboard view.
+- **Admin Dashboard**: Class management, attendance logs with filtering, merchandise order processing.
+- **Owner Dashboard**: Interactive analytics charts (fl_chart), system health metrics, export options.
+- **Gamification Engine**: Points transactions, streak bonuses, achievements, and redemption rules.
+- **Merchandise Redemption**: UI to select items, verify point balance, deduct points, and create an order record.
+- **Reusable UI Components**: Custom Flutter widgets for consistent UI across 50+ screens.
+- **Security & Compliance**: Environment-based config, RLS policies, server-side validation.
+- **Testing Suite**: Unit tests for Edge Functions, widget tests for UI components, integration tests for NFC flow.
 
 ---
 
 ## 5. Tech Stack & Tools
 
-- **Framework**: Next.js (App Router) for file-based routing, SSR/SSG, and API routes.
-- **Language**: TypeScript for type safety.
-- **UI Library**: React 18 for component-based UI.
-- **Styling**: Plain CSS via `globals.css` (global reset) and `theme.css` (sectional styling). Can easily migrate to CSS Modules or Tailwind in the future.
-- **Backend**: Node.js runtime provided by Next.js API routes.
-- **Password Hashing**: bcrypt (npm package).
-- **Session/JWT**: NextAuth.js or custom JWT logic (to be decided in implementation).
-- **IDE & Dev Tools**: VS Code with ESLint, Prettier extensions. Optionally, Cursor.ai for AI-assisted coding.
+- **Frontend**: Flutter (Dart) using Material Design 3.
+- **State Management**: Riverpod for global and scoped state.
+- **NFC**: `flutter_nfc_kit` package.
+- **Charts**: `fl_chart` for interactive analytics.
+- **Backend**: Supabase (PostgreSQL) with Auth, Database, Realtime, Storage.
+- **Edge Functions**: Supabase Edge Functions written in TypeScript.
+- **Environment Variables**: `flutter_dotenv` for Supabase URL and anon key.
+- **Testing**: Flutter’s built-in widget and integration test frameworks; Jest (or Vitest) for Edge Functions.
+- **IDE/Plugins**: Visual Studio Code or Android Studio, Pubspec Assist, Flutter Lints, Supabase VSCode extension.
 
 ---
 
 ## 6. Non-Functional Requirements
 
-- **Performance**: Initial page load under 200 ms on a standard broadband connection. API responses under 300 ms.
-- **Security**:
-  - HTTPS only in production.
-  - Proper CORS, CSRF protection for API routes.
-  - Secure password storage (bcrypt with salt).
-  - No credentials or secrets checked into version control.
-- **Scalability**: Structure must support adding database integration, caching layers, and advanced auth flows without rewiring core app.
-- **Usability**: Forms should give real-time feedback on invalid input. Layout must be responsive (mobile > 320 px).
-- **Maintainability**: Code must adhere to TypeScript strict mode. Linting & formatting enforced by ESLint/Prettier.
+- **Performance**: Edge Functions respond within 200 ms; UI updates <1 s after data change.
+- **Scalability**: Handle up to 1,000 concurrent users and 100 check-ins per minute.
+- **Security**: All traffic over HTTPS; environment variables for secrets; strict RLS policies; server-side input validation.
+- **Usability & Accessibility**: Conform to WCAG 2.1 AA where possible; high-contrast themes; clear error messaging.
+- **Reliability**: 99% uptime for core features; automatic retries on transient failures.
 
 ---
 
 ## 7. Constraints & Assumptions
 
-- **No Database**: Dashboard uses only `data.json`; real database integration is deferred.
-- **Node Version**: Requires Node.js >= 14.
-- **Next.js Version**: Built on Next.js 13+ App Router.
-- **Authentication**: Assumes availability of bcrypt or NextAuth.js at implementation time.
-- **Hosting**: Targets serverless or Node.js-capable hosting (e.g., Vercel, Netlify).
-- **Browser Support**: Modern evergreen browsers; no IE11 support required.
+- Supabase services (Auth, Edge Functions, Realtime) remain within free or budgeted tier limits.
+- Target devices support the `flutter_nfc_kit` package and MIFARE Classic card reading.
+- Continuous internet connectivity during NFC check-in (no offline mode in v1).
+- Team is proficient in Dart, TypeScript, and understands Supabase and Flutter paradigms.
+- Supabase Edge Functions have enough cold-start and execution performance for real-time needs.
 
 ---
 
 ## 8. Known Issues & Potential Pitfalls
 
-- **Static Data Limitation**: `data.json` is only for demo. A real API or database will be needed to avoid stale data.
-  *Mitigation*: Define a clear interface for data fetching so swapping to a live endpoint is trivial.
-
-- **Global CSS Conflicts**: Using global styles can lead to unintended overrides.
-  *Mitigation*: Plan to migrate to CSS Modules or utility-first CSS in Phase 2.
-
-- **API Route Ambiguity**: Single `/api/auth/route.ts` handling both sign-up and sign-in could get complex.
-  *Mitigation*: Clearly branch on HTTP method (`POST /register` vs. `POST /login`) or split into separate files.
-
-- **Lack of Testing**: No test suite means regressions can slip in.
-  *Mitigation*: Build a minimal Jest + React Testing Library setup in an early iteration.
-
-- **Error Handling Gaps**: Client and server must handle edge cases (network failures, malformed input).
-  *Mitigation*: Define a standard error response schema and show user-friendly messages.
+- **Supabase Rate Limits**: Hitting function invocation or database row limits could throttle check-ins. Mitigation: batch requests or add client-side debounce.
+- **NFC Hardware Variability**: Some Android/iOS devices might not support certain card types. Mitigation: test on a matrix of common models and provide a manual check-in fallback.
+- **RLS Misconfiguration**: Incorrect policies could expose user data. Mitigation: write comprehensive policy tests and run them in CI.
+- **High-Volume Chart Data**: Rendering thousands of data points can lag. Mitigation: paginate or sample data series on the backend.
+- **Offline Scenarios**: Without connectivity, check-ins fail. Mitigation: display clear error states and allow retry logic once back online.
+- **Edge Function Cold Starts**: Cold starts may add latency. Mitigation: keep functions warmed or optimize code for minimal startup.
 
 ---
 
-This PRD should serve as the single source of truth for the AI model or any developer generating the next set of technical documents: Tech Stack Doc, Frontend Guidelines, Backend Structure, App Flow, File Structure, and IDE Rules. It contains all functional and non-functional requirements with no ambiguity, enabling seamless downstream development.
+This PRD provides a clear, unambiguous blueprint for the AI or development team to build the NFC attendance gamification app with Flutter and Supabase. All core flows, boundaries, and quality expectations are laid out to avoid guesswork in subsequent technical documentation.

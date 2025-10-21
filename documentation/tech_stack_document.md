@@ -1,90 +1,97 @@
-# Tech Stack Document
+# Tech Stack Document for codeguide-nfc-attendance-gamify
 
-This document explains the key technologies chosen for the **codeguide-starter** project. It’s written in everyday language so anyone—technical or not—can understand why each tool was picked and how it supports the application.
+This document explains in everyday terms why we chose each technology and how they fit together. It should help anyone understand the key building blocks without needing a deep technical background.
 
-## 1. Frontend Technologies
-The frontend is everything the user sees and interacts with. For this project, we’ve used:
+## Frontend Technologies
 
-- **Next.js (App Router)**
-  - A React framework that makes page routing, server-side rendering, and API routes very simple.
-  - Enhances user experience by pre-rendering pages on the server or at build time, leading to faster initial load.
-- **React 18**
-  - The underlying library for building user interfaces with reusable components.
-  - Provides a smooth, interactive experience thanks to its virtual DOM and modern hooks.
-- **TypeScript**
-  - A superset of JavaScript that adds types (labels for data).
-  - Helps catch errors early during development and makes the code easier to maintain.
-- **CSS (globals.css & theme.css)**
-  - **globals.css** applies base styles (fonts, colors, resets) across the entire app.
-  - **dashboard/theme.css** defines the look and feel specific to the dashboard area.
-  - This separation keeps styles organized and avoids accidental style conflicts.
+The frontend is what students, admins, and owners see and interact with on their mobile devices. We focused on a smooth user experience, clear visuals, and reusable pieces to speed up development.
 
-By combining these tools, we have a clear structure (Next.js folders for pages and layouts), safer code (TypeScript), and flexible styling with vanilla CSS.
+**Key Technologies**
+- Flutter (Dart) for building the entire app in one codebase that runs on both iOS and Android
+- Riverpod for managing application state (user info, live leaderboards, achievement notifications)
+- flutter_nfc_kit package for reading NFC card UIDs during check-in
+- fl_chart package for drawing interactive charts in the Owner’s analytics dashboard
+- Material Design 3 for a consistent look and feel across more than fifty screens
+- .env files or compile-time variables for storing Supabase keys securely
 
-## 2. Backend Technologies
-The backend handles data, user accounts, and the logic behind the scenes. Our choices here are:
+**Why these choices?**
+- Flutter lets us maintain one codebase for two platforms, speeding up development and ensuring consistency.
+- Riverpod keeps data flow easy to understand and debug, so screens update in real time when data changes.
+- Packages like flutter_nfc_kit and fl_chart provide ready-made components for NFC scanning and charts, so we don’t have to build those from scratch.
+- Using Material Design 3 and a shared widget library (StatCard, LeaderboardListItem, AchievementBadge) ensures all screens look and behave similarly.
 
-- **Next.js API Routes**
-  - Allows us to write server-side code (`route.ts` files) alongside our frontend in the same project.
-  - Runs on Node.js, so we can handle requests like sign-up, sign-in, and data fetching in one place.
-- **Node.js Runtime**
-  - The JavaScript environment on the server that executes our API routes.
-- **bcrypt** (npm package)
-  - A library for hashing passwords securely before storing them.
-  - Ensures that even if someone got access to our data, raw passwords aren’t visible.
-- **(Optional) NextAuth.js or JWT**
-  - While this starter kit shows a custom authentication flow, it can easily integrate services like NextAuth.js for email-based login or JWT (JSON Web Tokens) for stateless sessions.
+## Backend Technologies
 
-These components work together to receive user credentials, verify or store them securely, manage sessions or tokens, and deliver protected data back to the frontend.
+The backend handles data storage, business logic, authentication, and real-time updates. We chose a serverless approach to focus on writing the features we need.
 
-## 3. Infrastructure and Deployment
-Infrastructure covers where and how we host the app, as well as how changes get delivered:
+**Key Technologies**
+- Supabase Auth for secure sign-up, login, and custom user roles (User, Admin, Owner)
+- Supabase Database (PostgreSQL) for storing profiles, NFC cards, attendance records, points, achievements, orders, etc.
+- Row Level Security (RLS) policies to ensure each role only sees or changes the data they’re allowed to
+- Supabase Edge Functions (TypeScript) for server-side logic:
+  - `record-attendance` (validate NFC check-in, award points)
+  - `calculate-leaderboard` (update rankings)
+  - `process-redemption` (handle merchandise orders atomically)
+  - `check-achievements` (unlock badges after certain point thresholds)
+- Supabase Realtime to push live updates (attendance, point totals, leaderboards) to connected devices without refreshing
+- Supabase Migrations (via Supabase CLI) to version and apply database schema changes in a repeatable way
 
-- **Git & GitHub**
-  - Version control system (Git) and remote hosting (GitHub) keep track of all code changes and allow team collaboration.
-- **Vercel (or Netlify)**
-  - A popular hosting service optimized for Next.js, with one-click deployments and global content delivery.
-  - Automatically rebuilds and deploys the site whenever code is pushed to the main branch.
-- **GitHub Actions (CI/CD)**
-  - Automates tasks like linting (ESLint), formatting (Prettier), and running any tests you add.
-  - Ensures that only clean, tested code goes live.
+**Why these choices?**
+- Supabase offers an all-in-one hosted solution (database, auth, real-time, functions) so we don’t manage servers ourselves.
+- Edge Functions in TypeScript give us type safety and clear separation of business logic from the Flutter UI.
+- RLS policies enforce security right at the database level so mistakes in client code can’t expose data.
+- Realtime updates make the experience feel instantly responsive when students check in or redeem points.
 
-Together, these tools provide a reliable, scalable setup where every code change is tested and deployed quickly, with minimal manual work.
+## Infrastructure and Deployment
 
-## 4. Third-Party Integrations
-While this starter kit is minimal by design, it already includes or can easily add:
+Reliable hosting, automated testing, and smooth deployments help us move quickly while keeping quality high.
 
-- **bcrypt**
-  - For secure password hashing (included as an npm dependency).
-- **NextAuth.js** (optional)
-  - A full-featured authentication library supporting email/password, OAuth, and more.
-- **Sentry or LogRocket** (optional)
-  - For real-time error tracking and performance monitoring in production.
+**Key Choices**
+- GitHub (or GitLab) for version control and code review
+- GitHub Actions (CI/CD) to run tests and deploy Edge Functions automatically on each commit
+- Docker for a reproducible development environment (especially for local Supabase emulation and migrations)
+- Supabase Hosting (managed) for database and functions, removing the need to maintain servers
+- Flutter build pipelines (e.g., CodeMagic or GitHub Actions) to produce signed iOS and Android app packages
 
-These integrations help extend the app’s capabilities without building every feature from scratch.
+**How it helps**
+- Automated pipelines catch errors early (tests, linting, type checks) so issues don’t make it to production.
+- Docker ensures every developer has the same setup, minimizing “works on my machine” problems.
+- Managed hosting means we can scale database and functions without manual server provisioning.
 
-## 5. Security and Performance Considerations
-We’ve baked in several measures to keep users safe and the app running smoothly:
+## Third-Party Integrations
 
-Security:
-- Passwords are never stored in plain text—bcrypt hashes them with a random salt.
-- API routes can implement CSRF protection and input validation to block malicious requests.
-- Session tokens or cookies are marked secure and HttpOnly to prevent theft via JavaScript.
+Beyond our core stack, we leverage a few external services to add key features quickly.
 
-Performance:
-- Server-side rendering (SSR) and static site generation (SSG) in Next.js deliver pages faster.
-- Code splitting and lazy-loaded components ensure users only download what they need.
-- Global CSS and theme files are small and cached by the browser for quick repeat visits.
+- Firebase Cloud Messaging (FCM) for push notifications (achievement unlocked, order status updates)
+- Supabase Realtime API for live data streams (attendance updates, leaderboard changes)
 
-These strategies work together to give users a fast, secure experience every time.
+**Benefits**
+- FCM integrates easily with Flutter and Edge Functions, letting us notify users instantly.
+- Supabase Realtime is built-in, so we don’t need an extra WebSocket service.
 
-## 6. Conclusion and Overall Tech Stack Summary
-In building **codeguide-starter**, we chose technologies that:
+## Security and Performance Considerations
 
-- Align with modern web standards (Next.js, React, TypeScript).
-- Provide a clear, file-based project structure for rapid onboarding.
-- Offer built-in support for server-side rendering, API routes, and static assets.
-- Emphasize security through password hashing, session management, and safe defaults.
-- Enable easy scaling and future enhancements via modular code and optional integrations.
+We treat security and smooth performance as top priorities to protect user data and keep the app feeling fast.
 
-This stack strikes a balance between simplicity for newcomers and flexibility for experienced teams. It accelerates development of a secure authentication flow and a polished dashboard, while leaving room to plug in databases, test suites, and advanced features as the project grows.
+**Security Measures**
+- Supabase Auth and RLS ensure users only access the data their role allows
+- Environment variables (.env) keep secrets out of source control
+- Server-side validation in every Edge Function before database writes
+- Row Level Security as a final safety net in the database
+
+**Performance Optimizations**
+- Real-time subscriptions in the client so screens update incrementally rather than full reloads
+- Reusable, lightweight Flutter widgets to minimize rebuild costs
+- TypeScript in Edge Functions to catch errors at build time, reducing runtime failures
+- Database indexing on key columns (e.g., NFC UID, user_id) for fast lookups
+
+## Conclusion and Overall Tech Stack Summary
+
+We selected this stack to meet three core goals: rapid development, robust security, and an engaging real-time experience.
+
+- **Flutter + Riverpod** provides a single, consistent codebase for mobile apps, backed by a shared widget library and Material Design 3.
+- **Supabase (Auth, Database, Realtime, Edge Functions)** offers a fully managed backend so we focus on business logic, not infrastructure.
+- **CI/CD + Docker** ensures we ship high-quality code quickly and reliably.
+- **FCM** and **Supabase Realtime** power push notifications and live updates that make attendance tracking and gamification feel instant.
+
+This combination of technologies aligns perfectly with the project’s goals, giving us a scalable, secure, and user-friendly platform for NFC-driven attendance and gamified student engagement.

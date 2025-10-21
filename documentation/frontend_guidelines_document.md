@@ -1,180 +1,171 @@
-# Frontend Guideline Document
+# Frontend Guidelines for NFC Attendance & Gamification App
 
-This document explains, in simple terms, how the frontend of the `codeguide-starter` project is structured, styled, and built. Anyone—technical or not—can read this and understand which tools are used, how components fit together, and what practices keep the app fast, reliable, and easy to maintain.
-
----
+This document describes how the Flutter-based frontend of the NFC attendance and gamification app is structured, styled, and maintained. It’s written in everyday language so that anyone—regardless of technical background—can follow along.
 
 ## 1. Frontend Architecture
 
-**Core Frameworks and Libraries**
-- **Next.js (App Router)**: A React-based framework that provides file-based routing, server-side rendering (SSR), static site generation (SSG), and built-in API endpoints all in one project.
-- **React 18**: The library for building user interfaces using components and hooks.
-- **TypeScript**: A superset of JavaScript that adds static types, helping catch errors early and making the code easier to understand and refactor.
+Our frontend follows a layered, component-based structure to keep things clear and easy to maintain:
 
-**How It’s Organized**
-- The `app/` folder holds all pages and layouts. Each URL path corresponds to a folder:
-  - `/app/sign-in` and `/app/sign-up` for authentication pages.
-  - `/app/dashboard` for the protected user area.
-  - API routes live under `/app/api/auth/route.ts`.
-- Each route folder contains:
-  - `page.tsx` (the UI for that page)
-  - `layout.tsx` (wrapping structure, like headers or sidebars)
-  - Styles (e.g., `theme.css` in the dashboard).
+• **Layers and Directories**
+  - **data/**: Holds classes that talk to Supabase (authentication, fetching attendance, points, etc.).
+  - **state/**: Contains Riverpod providers and state classes that bridge UI and data.
+  - **widgets/**: Reusable UI building blocks (stats cards, lists, buttons).
+  - **screens/**: Full pages or flows, organized by user role (`/user`, `/admin`, `/owner`).
 
-**Why This Works**
-- **Scalability**: Adding new pages or features means creating new folders with their own layouts and pages. You don’t have to touch a central router file.
-- **Maintainability**: Code is separated by feature. Backend logic (API routes) lives alongside the frontend code for that feature, reducing context-switching.
-- **Performance**: Next.js pre-renders pages where possible and splits code by route, so users download only what’s needed.
-
----
+• **Why it works**
+  - **Scalable**: You can add new screens or widgets without touching unrelated code.
+  - **Maintainable**: Clear separation means bugs are easier to find and fix.
+  - **Performant**: Layers minimize unnecessary rebuilds and network calls.
 
 ## 2. Design Principles
 
-1. **Usability**: Forms give instant feedback. Buttons and links are clearly labeled.
-2. **Accessibility**: Semantic HTML, proper color contrast, and focus outlines ensure people using screen readers or keyboards can navigate easily.
-3. **Responsiveness**: Layouts adapt from mobile (320px) up to large desktop screens. CSS media queries ensure content resizes and stacks neatly.
-4. **Consistency**: Shared global layout and styling mean pages look and feel like part of the same app.
+We follow three bedrock principles across the app:
 
-**How We Apply Them**
-- Form fields use `aria-*` attributes and visible labels.
-- Error messages appear inline under inputs.
-- Navigation elements (header, sidebar) appear in every layout.
-- Breakpoints at 480px, 768px, and 1024px guide responsive adjustments.
+• **Usability**: Controls are large enough to tap, flows are clear, and feedback is immediate (snack bars, loading indicators).
 
----
+• **Accessibility**: We use semantic Flutter widgets, maintain color contrast ratios, and label interactive elements for screen readers.
+
+• **Responsiveness**: Layouts adapt to phones and tablets. We use `Flexible`, `Expanded`, and adaptive text scaling to ensure a consistent look on all screen sizes.
+
+### Applying These Principles
+
+• **Button Sizes & Touch Targets**: Minimum 48×48dp for interactive elements.
+
+• **Screen Reader Support**: `Semantics` widgets wrap complex UI for better narration.
+
+• **Adaptive Layout**: Breakpoints adjust padding, column counts, and font sizes automatically.
 
 ## 3. Styling and Theming
 
-**Approach**
-- **Global Styles (`globals.css`)**: Resets, base typography, and common utility classes.
-- **Section Styles (`theme.css` in dashboard)**: Styles specific to the dashboard area (colors, layouts).
-- We follow a **BEM-inspired naming** for classes when writing new CSS to avoid conflicts and keep selectors clear.
+We rely on Material Design 3 for a modern, cohesive feel. Here’s how it’s set up:
 
-**Visual Style**: Modern flat design with subtle shadows for depth. Clear spacing and large touch targets on mobile.
+### Approach and Tools
 
-**Color Palette**
-- **Primary Blue**: #1E90FF  (buttons, highlights)
-- **Secondary Navy**: #2C3E50  (header, sidebar background)
-- **Accent Cyan**: #00CEC9  (links, hover states)
-- **Neutral Light**: #F8F9FA  (page backgrounds)
-- **Neutral Dark**: #2D3436  (text, icons)
+• **Framework**: Flutter’s built-in Material theming.
 
-**Font**
-- **Inter** (sans-serif): Clean, modern, highly legible on screens. Fallback to system fonts like `-apple-system, BlinkMacSystemFont, sans-serif`.
+• **Pre-Processor**: None—Flutter’s theme system handles colors, fonts, and shapes directly.
 
-**Theming**
-- To keep a consistent look, all colors and font sizes are defined in CSS variables in `globals.css`:
-  ```css
-  :root {
-    --color-primary: #1E90FF;
-    --color-secondary: #2C3E50;
-    --color-accent: #00CEC9;
-    --color-bg: #F8F9FA;
-    --color-text: #2D3436;
-    --font-family: 'Inter', sans-serif;
-  }
-  ```
-- Components consume these variables for backgrounds, borders, and text.
+### Visual Style
 
----
+• **Style**: Modern, flat surfaces with subtle elevation and rounded corners (Material 3 “surface” look).
+
+• **Glassmorphism Accents**: On select overlay dialogs, we use semi-transparent cards with backdrop blur for depth.
+
+### Color Palette
+
+| Role      | Light Mode    | Dark Mode     |
+|-----------|---------------|---------------|
+| Primary   | #6750A4       | #D0BCFF       |
+| Secondary | #625B71       | #CCC2DC       |
+| Tertiary  | #7D5260       | #EFB8C8       |
+| Background| #FEF7FF       | #1E1B1E       |
+| Error     | #B3261E       | #F2B8B5       |
+
+### Typography
+
+• **Font Family**: Roboto
+
+• **Weights & Sizes**:
+  - Headline1: 96sp
+  - Headline2: 60sp
+  - Headline3: 48sp
+  - Body1: 16sp
+  - Button: 14sp, uppercase
 
 ## 4. Component Structure
 
-**File Layout**
-- `/app` (top-level folder)
-  - `layout.tsx`: Global wrapper (nav, footer).
-  - `page.tsx`: Landing or redirect logic.
-  - `/sign-in`, `/sign-up`, `/dashboard`, `/api/auth`
-    - Each has its own `layout.tsx` and `page.tsx`.
-- **Common Components**: Put reusable UI pieces (buttons, inputs, cards) into a `/components` folder at the project root.
+Our component (widget) library lives in `/widgets`:
 
-**Reusability & Encapsulation**
-- Components are self-contained: each has its own styles (class names scoped to BEM) and behavior.
-- Shared logic (e.g., API calls) lives in `/lib` or `/hooks` so pages import only what they need.
+• **StatCard**: Displays a number and label (points, streaks).
 
-**Benefits**
-- **Easier Maintenance**: Fix a bug in one button component, and it updates everywhere.
-- **Better Team Collaboration**: Developers can own specific components or pages without stepping on each other’s code.
+• **LeaderboardListItem**: Shows user photo, name, rank, and points.
 
----
+• **AchievementBadge**: Circular icon + text for unlocked badges.
+
+• **DataTableList**: Scrollable list with headers, used for attendance logs and orders.
+
+• **ChartWidget**: Wraps `fl_chart` line/bar charts for analytics.
+
+Why this matters:
+
+- **Reuse**: One widget is used in multiple screens (e.g., StatCard appears on User, Admin, Owner dashboards).
+- **Maintainability**: Changing a widget in one place updates all instances automatically.
 
 ## 5. State Management
 
-**Current Approach**
-- **Local State**: React `useState` and `useEffect` for form values, loading flags, and error messages.
-- **Server State**: Fetch data (e.g., dashboard JSON) directly in page components or using React Server Components.
+We use Riverpod to handle state across the app:
 
-**Sharing State**
-- **React Context**: A simple auth context (`AuthContext`) holds the user’s session info, login/logout methods, and makes it available to any component.
-  - Located in `/context/AuthContext.tsx`.
+• **Global Providers**: 
+  - `authProvider`: Tracks current user’s session and role.
+  - `attendanceProvider`: Streams real-time attendance via Supabase Realtime.
+  - `leaderboardProvider`: Fetches and updates leaderboard data.
 
-**Future Growth**
-- If complexity grows (deeply nested data, multiple user roles), consider:
-  - **Redux Toolkit** or **Zustand** for centralized state.
-  - Query libraries like **React Query** or **SWR** for caching and re-fetch logic.
-
----
+• **Why Riverpod?**
+  - **Auto-dispose**: Frees memory when screens go away.
+  - **Scoped overrides**: Easy to mock data in tests.
+  - **No context needed**: Makes it simple to read/write state from any widget.
 
 ## 6. Routing and Navigation
 
-**Routing Library**
-- Built into **Next.js App Router**. Each folder under `/app` becomes a route automatically.
-- Layouts (`layout.tsx`) and pages (`page.tsx`) are colocated for that route.
+We rely on GoRouter for declarative routing:
 
-**Protected Pages**
-- The dashboard’s `layout.tsx` checks for a valid session (via cookie or context). If missing, it issues a server-side redirect to `/sign-in`.
+• **Routes**:
+  - `/login` → Sign-in screen
+  - `/user/dashboard` → Student view
+  - `/admin/dashboard` → Attendance & order management
+  - `/owner/dashboard` → Analytics charts
 
-**Navigation Structure**
-- **Header**: Present in global layout with the app logo and conditional Sign In/Sign Out links.
-- **Sidebar**: Included in `dashboard/layout.tsx` with links to dashboard sections (expandable in future).
+• **Role-based Redirects**:
+  - After login, GoRouter checks `authProvider`. Depending on whether the user is a Student, Admin, or Owner, they’re redirected to their specific dashboard.
 
----
+• **Nested Navigation**: Tabs and sub-routes are nested under each dashboard route, keeping URLs and navigation stacks predictable.
 
 ## 7. Performance Optimization
 
-1. **Code Splitting**: Next.js automatically breaks code by route. Users only load JS needed for the current page.
-2. **Lazy Loading**: For large components (charts, maps), wrap with `next/dynamic` to load them only when needed.
-3. **Image Optimization**: Use Next.js `<Image>` component to serve responsive, compressed images.
-4. **Caching**:
-   - Static assets (CSS, fonts) use long cache headers.
-   - API responses can be cached or ISR (Incremental Static Regeneration) applied.
-5. **Minification & Compression**: Next.js production builds automatically minify JS and CSS, and enable Brotli/Gzip on the CDN.
+To keep the app snappy:
 
-These steps ensure fast page loads and smooth interactions.
+• **Const Widgets**: Mark as many widgets as `const` as possible to avoid rebuilds.
 
----
+• **Deferred Imports**: Heavy screens (e.g., Owner’s full analytics panel) load only when navigated to.
+
+• **Image Caching**: Profile photos and badge icons use `cached_network_image`.
+
+• **Chunked Lists**: Large attendance logs are paginated or virtualized to avoid UI jank.
+
+• **Network Throttling in Dev**: We test with slow connections to ensure graceful loading indicators.
 
 ## 8. Testing and Quality Assurance
 
-**Unit Tests**
-- **Jest** + **React Testing Library** for components and utility functions.
-- Example: test that the Sign In form shows an error message when fields are empty.
+Our testing pyramid includes:
 
-**Integration Tests**
-- Combine multiple components and hooks; test API calls with **msw** (Mock Service Worker).
+• **Unit Tests**:
+  - Dart `test` for pure logic (e.g., point calculation algorithms, date utilities).
+  - Riverpod providers mocked to verify state changes.
 
-**End-to-End (E2E) Tests**
-- **Cypress** or **Playwright** to simulate real user flows: signing up, logging in, and viewing the dashboard.
+• **Widget Tests**:
+  - Render widgets in isolation (e.g., StatCard, DataTableList) and verify layout, text, and interaction.
 
-**Linting & Formatting**
-- **ESLint** enforces code style and catches common bugs.
-- **Prettier** applies consistent formatting.
-- **Git Hooks** (via Husky) run linting/tests before each commit.
+• **Integration Tests**:
+  - End-to-end flows using `integration_test`: login → NFC check-in → points awarded → leaderboard update.
 
-**Continuous Integration (CI)**
-- **GitHub Actions** runs tests and lint on each pull request, preventing regressions.
+• **Tools**:
+  - `flutter_test` and `integration_test`
+  - `mocktail` for mocking Supabase responses
 
----
+• **CI Pipeline**:
+  - Runs tests on every pull request
+  - Lints code with `flutter analyze`
+  - Checks formatting with `flutter format --set-exit-if-changed`
 
 ## 9. Conclusion and Overall Frontend Summary
 
-The `codeguide-starter` frontend is built on modern, well-established tools—Next.js, React, and TypeScript—and follows clear principles around usability, accessibility, and maintainability. Its file-based structure, component-driven approach, and CSS-variable theming keep things organized and consistent.
+This Flutter frontend is built to be clear, consistent, and reliable. By:
 
-Key takeaways:
-- **Scalable Structure**: Add new features by creating new folders under `app/` without touching a central router.
-- **Component Reuse**: Shared UI pieces live in one place, making updates quick and error-free.
-- **Simple Styling**: Global and section-specific CSS, underpinned by CSS variables, ensures a unified look.
-- **Smooth Performance**: Next.js automatic optimizations plus best practices like lazy loading and caching.
-- **Quality Assurance**: A testing plan that covers unit, integration, and E2E scenarios, enforced by CI.
+- Separating code into data, state, widgets, and screens layers,
+- Adopting Material Design 3 with a defined color palette,
+- Emphasizing accessibility and responsiveness,
+- Relying on Riverpod for state and GoRouter for navigation,
+- Optimizing performance with const widgets and lazy loading,
+- Backing everything up with robust tests,
 
-With these guidelines, any developer coming into the project can understand how the pieces fit together, how to follow existing patterns, and how to keep the app fast, reliable, and easy to grow.
+we ensure a polished, maintainable, and scalable application. Anyone joining the project can find their way around, add new features, or fix defects without a steep learning curve. This setup aligns directly with our goals: fast development, high quality, and an engaging user experience for Students, Admins, and Owners alike.
